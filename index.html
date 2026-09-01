@@ -41,6 +41,12 @@
         <button class="nav-item" data-view="rewards">🏆 <span>XP & Rewards</span></button>
         <button class="nav-item" data-view="settings">⚙️ <span>Settings</span></button>
       </nav>
+      <div id="deadlinePanel" class="deadline-panel">
+        <div class="deadline-title">EXAM COUNTDOWN</div>
+        <div class="deadline-row"><span>Kerala PSC</span><b id="pscDaysLeft">—</b><small>days</small></div>
+        <div class="deadline-row"><span>UPSC Prelims</span><b id="upscDaysLeft">—</b><small>days</small></div>
+        <div class="deadline-row muted-deadline"><span>Pub Ad</span><b>Priority</b><small>no date set</small></div>
+      </div>
       <div class="sidebar-bottom">
         <div id="syncBadge" class="sync-badge">● Local</div>
         <button id="logoutBtn" class="btn subtle wide">Sign out</button>
@@ -113,7 +119,7 @@
       </section>
 
       <section id="subjectsView" class="view">
-        <section class="panel"><div class="panel-head"><div><h2>Full Syllabus Map</h2><p class="muted">Exam → subject → topic → every imported micro-topic. Expand only what you want to see.</p></div></div><div class="syllabus-tools"><select id="syllabusExamFilter"><option value="">All exams</option></select><input id="syllabusSearch" type="search" placeholder="Search any topic or micro-topic…"></div><div id="syllabusSummary" class="syllabus-summary"></div><div id="subjectCards" class="syllabus-tree"></div></section>
+        <section class="panel"><div class="panel-head"><div><h2>Full Syllabus Map</h2><p class="muted">Official syllabus → intermediate heading (when useful) → micro-topic. Every micro-topic is anchored to an official syllabus line.</p></div></div><div class="syllabus-tools"><select id="syllabusExamFilter"><option value="">All exams</option></select><input id="syllabusSearch" type="search" placeholder="Search any topic or micro-topic…"></div><div id="syllabusSummary" class="syllabus-summary"></div><div id="subjectCards" class="syllabus-tree"></div></section>
       </section>
 
       <section id="revisionView" class="view">
@@ -129,6 +135,7 @@
       </section>
 
       <section id="progressView" class="view">
+        <section class="panel"><div class="panel-head"><div><h2>Study Time</h2><p class="muted">Your timer history is permanent. Daily counters reset; these totals do not.</p></div></div><div id="studyTimeCards" class="study-time-cards"></div><div id="studyCalendar" class="study-calendar"></div></section>
         <section class="panel"><div class="panel-head"><div><h2>Exam Progress</h2><p class="muted">This is where micro-topics remaining live, not on your homepage.</p></div></div><div id="examProgressCards" class="progress-cards"></div></section>
         <section class="panel"><div class="panel-head"><div><h2>Completed Topics</h2><p class="muted">Permanent history of syllabus micro-topics you have studied or mastered.</p></div></div><div id="completedTopicsList" class="stack-list"></div></section>
       </section>

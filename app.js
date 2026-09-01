@@ -7,7 +7,7 @@
   const $ = (id) => document.getElementById(id);
   const todayISO = () => { const d=new Date(); const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; };
   const PLAN_ENGINE_VERSION='priority-freeze-psc40-pubad-ethics-2026-09-01';
-  const PSC_TARGET_DATE='2026-10-10', PSC_HARD_DATE='2026-10-14';
+  const PSC_TARGET_DATE='2026-10-10', PSC_HARD_DATE='2026-10-14', UPSC_PRELIMS_DATE='2027-05-23';
   const addDays = (dateStr, days) => { const d = new Date(dateStr+'T12:00:00'); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); };
   const esc = (s='') => String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const uuid = () => crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now();
@@ -146,7 +146,7 @@
     const t=todayISO();
     const examDefs=[
       {name:'Kerala PSC University Assistant',short_name:'PSC',deadline:'2026-10-14',color:'#31d47d',sort_order:1},
-      {name:'UPSC CSE General Studies',short_name:'UPSC GS',deadline:null,color:'#39a8ff',sort_order:2},
+      {name:'UPSC CSE General Studies',short_name:'UPSC GS',deadline:'2027-05-23',color:'#39a8ff',sort_order:2},
       {name:'Public Administration Optional',short_name:'PUB AD',deadline:null,color:'#9c7cff',sort_order:3}
     ];
     const taskDefs=[
@@ -183,7 +183,10 @@
     const map=[180,240,360]; $('energyMode').value=map.includes(+state.settings.daily_minutes)?String(state.settings.daily_minutes):'240';
   }
 
-  function renderAll(){ fillExamSelects(); updateStudyTimeUI(); updatePaceBanner(); renderToday(); renderRecall(); renderCarry(); renderPlan(); renderSubjects(); renderRevision(); renderErrors(); renderProgress(); renderRewards(); updateStatsUI(); }
+  function deadlineFor(short){return short==='PSC'?PSC_HARD_DATE:short==='UPSC GS'?UPSC_PRELIMS_DATE:null;}
+  function daysUntil(dateStr){const a=new Date(todayISO()+'T12:00:00'),b=new Date(dateStr+'T12:00:00');return Math.max(0,Math.ceil((b-a)/86400000));}
+  function updateDeadlineUI(){if($('pscDaysLeft'))$('pscDaysLeft').textContent=daysUntil(PSC_HARD_DATE);if($('upscDaysLeft'))$('upscDaysLeft').textContent=daysUntil(UPSC_PRELIMS_DATE);}
+  function renderAll(){ fillExamSelects(); updateStudyTimeUI(); updateDeadlineUI(); updatePaceBanner(); renderToday(); renderRecall(); renderCarry(); renderPlan(); renderSubjects(); renderRevision(); renderErrors(); renderProgress(); renderRewards(); updateStatsUI(); }
   function fillExamSelects(){
     const opts='<option value="">No exam</option>'+state.exams.map(e=>`<option value="${e.id}">${esc(e.short_name)} · ${esc(e.name)}</option>`).join(''); $('taskExam').innerHTML=opts;
     const nameOpts=state.exams.map(e=>`<option value="${esc(e.short_name)}">${esc(e.short_name)} · ${esc(e.name)}</option>`).join(''); $('errorExam').innerHTML=nameOpts; $('errorExamFilter').innerHTML='<option value="">All exams</option>'+nameOpts;
@@ -417,37 +420,136 @@
     renderAll();
   }
 
+  const UPSC_OFFICIAL = {
+    'GS I': {
+      'Culture': 'Indian culture: Art Forms, literature and Architecture from ancient to modern times',
+      'Modern History': 'Modern Indian history from about the middle of the eighteenth century until the present',
+      'Freedom Struggle': 'The Freedom Struggle: stages and important contributors/contributions',
+      'Post Independence': 'Post-independence consolidation and reorganization within the country',
+      'World History': 'World history from the 18th century: industrial revolution, world wars, colonization, decolonization and political philosophies',
+      'Society': 'Indian Society, diversity, women, population, poverty, urbanization, globalization, social empowerment, communalism, regionalism and secularism',
+      'Physical Geography': 'Salient features of the world’s physical geography',
+      'Resources & Industries': 'Distribution of key natural resources and factors responsible for location of industries',
+      'Geophysical Phenomena': 'Earthquakes, tsunamis, volcanic activity, cyclones and changes in critical geographical features'
+    },
+    'GS II': {
+      'Constitution': 'Indian Constitution: historical underpinnings, evolution, features, amendments, significant provisions and basic structure',
+      'Federalism': 'Union-State responsibilities, federal structure and devolution of powers and finances',
+      'Separation of Powers': 'Separation of powers, dispute redressal mechanisms and institutions',
+      'Comparative Constitution': 'Comparison of the Indian constitutional scheme with that of other countries',
+      'Legislatures': 'Parliament and State legislatures: structure, functioning, powers, privileges and issues',
+      'Executive & Judiciary': 'Executive and Judiciary; Ministries and Departments; pressure groups and associations',
+      'Representation of People': 'Salient features of the Representation of People’s Act',
+      'Constitutional Bodies': 'Constitutional posts and Constitutional Bodies: appointment, powers, functions and responsibilities',
+      'Regulatory Bodies': 'Statutory, regulatory and quasi-judicial bodies',
+      'Policies & Development': 'Government policies and interventions for development: design and implementation issues',
+      'Development Industry': 'Development processes and the role of NGOs, SHGs, donors, charities and other stakeholders',
+      'Welfare': 'Welfare schemes and mechanisms for vulnerable sections',
+      'Social Sector': 'Health, Education and Human Resources',
+      'Poverty & Hunger': 'Issues relating to poverty and hunger',
+      'Governance': 'Governance, transparency, accountability, e-governance and Citizens Charters',
+      'Civil Services': 'Role of civil services in a democracy',
+      'Neighbourhood': 'India and its neighborhood relations',
+      'Global Groupings': 'Bilateral, regional and global groupings and agreements involving India',
+      'Foreign Policies & Diaspora': 'Effect of policies and politics of countries on India’s interests; Indian diaspora',
+      'International Institutions': 'Important international institutions, agencies and fora: structure and mandate'
+    },
+    'GS III': {
+      'Economy': 'Indian Economy: planning, mobilization of resources, growth, development and employment',
+      'Inclusive Growth': 'Inclusive growth and issues arising from it',
+      'Budgeting': 'Government Budgeting',
+      'Agriculture': 'Crops, irrigation, storage, transport, marketing and e-technology for farmers',
+      'Farm Support & Food Security': 'Farm subsidies, MSP, PDS, buffer stocks, food security, technology missions and animal-rearing',
+      'Food Processing': 'Food processing and related industries; supply chain management',
+      'Land Reforms': 'Land reforms in India',
+      'Liberalisation & Industry': 'Effects of liberalization, industrial policy and industrial growth',
+      'Infrastructure': 'Infrastructure: Energy, Ports, Roads, Airports, Railways etc.',
+      'Investment Models': 'Investment models',
+      'Science & Technology': 'Science and Technology: developments, applications and effects in everyday life',
+      'Indian S&T': 'Achievements of Indians in science and technology; indigenization and new technology',
+      'Emerging Technology & IPR': 'IT, Space, Computers, robotics, nano-technology, bio-technology and IPR',
+      'Environment': 'Conservation, environmental pollution and degradation, environmental impact assessment',
+      'Disaster Management': 'Disaster and disaster management',
+      'Extremism': 'Linkages between development and spread of extremism',
+      'Security Actors': 'External state and non-state actors creating challenges to internal security',
+      'Cyber & Communication Security': 'Communication networks, media/social networking, cyber security and money-laundering',
+      'Border & Organised Crime': 'Border security and linkages of organized crime with terrorism',
+      'Security Forces': 'Various Security forces and agencies and their mandate'
+    },
+    'GS IV': {
+      'Ethics & Human Interface': 'Ethics and Human Interface; Human Values',
+      'Attitude': 'Attitude: content, structure, function, moral and political attitudes, social influence and persuasion',
+      'Aptitude & Values': 'Aptitude and foundational values for Civil Service',
+      'Emotional Intelligence': 'Emotional Intelligence: concepts, utilities and application in administration and governance',
+      'Thinkers': 'Contributions of Moral Thinkers and Philosophers from India and World',
+      'Public Service Ethics': 'Public/Civil Service Values and Ethics in Public Administration',
+      'Probity': 'Probity in Governance',
+      'Case Studies': 'Case Studies on the above issues'
+    }
+  };
+  function includesAny(t,arr){return arr.some(k=>t.includes(k));}
+  function upscOfficialPath(m){
+    const t=`${m.subject||''} ${m.topic||''} ${m.microtopic||''}`.toLowerCase();
+    let paper='GS III', key='Economy';
+    // Strong content overrides first. These repair source-tree spillovers before trusting the imported subject label.
+    if(includesAny((m.topic||'').toLowerCase(),['ethics basic','ethics and human','probity in governance','attitude','emotional intelligence']) && m.subject!=='Ethics, Integrity & Aptitude'){paper='GS IV';key=includesAny(t,['probity'])?'Probity':includesAny(t,['attitude'])?'Attitude':includesAny(t,['emotional intelligence'])?'Emotional Intelligence':'Ethics & Human Interface';
+    } else if(includesAny((m.topic||'').toLowerCase(),['disaster management','natural & man-made disasters','man-made disasters']) && m.subject!=='Disaster Management'){paper='GS III';key='Disaster Management';
+    } else if(m.subject==='Infrastructure' && (m.topic||'').trim().toLowerCase()==='agriculture'){paper='GS III';key='Agriculture';
+    } else if(includesAny(t,['internal security','terror','insurgen','extremis','naxal','maoist','cyber security','cybersecurity','cyber crime','cybercrime','money laundering','border management','border security','organized crime','organised crime','security force','security forces','paramilitary','intelligence agency','national security','police reform'])){
+      paper='GS III';
+      if(includesAny(t,['cyber','communication network','social media','money laundering'])) key='Cyber & Communication Security';
+      else if(includesAny(t,['border','organized crime','organised crime','terrorism and organized','terrorism and organised'])) key='Border & Organised Crime';
+      else if(includesAny(t,['security force','security forces','paramilitary','bsf','crpf','cisf','itbp','assam rifles','national security guard'])) key='Security Forces';
+      else if(includesAny(t,['extremis','naxal','maoist','development'])) key='Extremism';
+      else key='Security Actors';
+    } else if(m.subject==='Ethics, Integrity & Aptitude'){paper='GS IV';
+      if(includesAny(t,['case stud']))key='Case Studies'; else if(includesAny(t,['probity','corruption','citizen charter','right to information','rti','code of conduct','code of ethics','work culture','public funds']))key='Probity'; else if(includesAny(t,['emotional intelligence']))key='Emotional Intelligence'; else if(includesAny(t,['attitude','persuasion','social influence']))key='Attitude'; else if(includesAny(t,['thinker','philosopher']))key='Thinkers'; else if(includesAny(t,['aptitude','integrity','impartiality','non-partisanship','objectivity','empathy','tolerance','compassion','dedication to public service']))key='Aptitude & Values'; else if(includesAny(t,['public administration','civil service','public service','ethical governance','corporate governance','international relations','ethical dilemma']))key='Public Service Ethics'; else key='Ethics & Human Interface';
+    } else if(['Ancient History','Medieval History','Modern History','Post Independence Consolidation','World History','Indian Culture','Physical Geography','Human Geography','Economic Geography','Indian Society'].includes(m.subject)) {paper='GS I';
+      if(m.subject==='Indian Culture'||includesAny(t,['art form','architecture','literature','culture']))key='Culture'; else if(m.subject==='Modern History')key=includesAny(t,['freedom struggle','national movement','gandhi','congress','swadeshi'])?'Freedom Struggle':'Modern History'; else if(m.subject==='Post Independence Consolidation')key='Post Independence'; else if(m.subject==='World History')key='World History'; else if(m.subject==='Indian Society')key='Society'; else if(m.subject==='Physical Geography')key=includesAny(t,['earthquake','tsunami','volcan','cyclone','geophysical'])?'Geophysical Phenomena':'Physical Geography'; else if(['Human Geography','Economic Geography'].includes(m.subject))key='Resources & Industries'; else key='Modern History';
+    } else if(['Polity','Governance','Social Justice','International Relations'].includes(m.subject)){paper='GS II';
+      if(m.subject==='International Relations'){if(includesAny(t,['neighbour','neighbor']))key='Neighbourhood';else if(includesAny(t,['institution','united nations',' un ','imf','world bank','wto','who ']))key='International Institutions';else if(includesAny(t,['diaspora','foreign policy','developed countr','developing countr']))key='Foreign Policies & Diaspora';else key='Global Groupings';}
+      else if(m.subject==='Social Justice'){if(includesAny(t,['poverty','hunger']))key='Poverty & Hunger';else if(includesAny(t,['health','education','human resource']))key='Social Sector';else key='Welfare';}
+      else if(m.subject==='Governance'){if(includesAny(t,['civil service']))key='Civil Services';else if(includesAny(t,['ngo','shg','self help','donor','charit']))key='Development Industry';else if(includesAny(t,['policy','policies','intervention','implementation']))key='Policies & Development';else key='Governance';}
+      else {if(includesAny(t,['federal','union-state','centre-state','center-state','devolution']))key='Federalism';else if(includesAny(t,['separation of powers','dispute redressal']))key='Separation of Powers';else if(includesAny(t,['parliament','legislature']))key='Legislatures';else if(includesAny(t,['representation of people','rpa','election law']))key='Representation of People';else if(includesAny(t,['constitutional bod','constitutional post','election commission','finance commission','cag','upsc']))key='Constitutional Bodies';else if(includesAny(t,['regulatory','quasi-judicial','statutory bod']))key='Regulatory Bodies';else if(includesAny(t,['executive','judiciary','ministry','ministries','pressure group']))key='Executive & Judiciary';else if(includesAny(t,['comparison','comparative constitution']))key='Comparative Constitution';else key='Constitution';}
+    } else {
+      paper='GS III';
+      if(m.subject==='Environment & Ecology')key='Environment'; else if(m.subject==='Disaster Management')key='Disaster Management'; else if(m.subject==='Internal Security')key='Security Actors'; else if(m.subject==='Science & Technology')key=includesAny(t,['space','robot','nano','biotech','computer','information technology','ipr','intellectual property'])?'Emerging Technology & IPR':'Science & Technology'; else if(m.subject==='Agriculture')key=includesAny(t,['subsid','msp','pds','food security','buffer stock','animal'])?'Farm Support & Food Security':includesAny(t,['food processing'])?'Food Processing':includesAny(t,['land reform'])?'Land Reforms':'Agriculture'; else if(m.subject==='Infrastructure')key='Infrastructure'; else if(m.subject==='Industry')key='Liberalisation & Industry'; else {if(includesAny(t,['budget']))key='Budgeting';else if(includesAny(t,['inclusive growth']))key='Inclusive Growth';else if(includesAny(t,['investment model']))key='Investment Models';else key='Economy';}
+    }
+    return {paper,official:UPSC_OFFICIAL[paper][key]||key};
+  }
+  function officialPath(m){
+    const ex=examShort(m.exam_id);
+    if(ex==='UPSC GS'){const x=upscOfficialPath(m);return {level1:x.paper,level2:x.official,mid:m.topic||''};}
+    if(ex==='PUB AD'){const clean=(m.subject||'').replace(/^Paper ([IVX]+) · /,''); const paper=(m.subject||'').startsWith('Paper II')?'Paper II · Indian Administration':'Paper I · Administration Theory';return {level1:paper,level2:clean,mid:m.topic||''};}
+    return {level1:m.subject||'PSC',level2:m.topic||m.subject||'Official syllabus',mid:''};
+  }
   function renderSubjects(){
     const root=$('subjectCards'), search=($('syllabusSearch')?.value||'').trim().toLowerCase(), examFilter=$('syllabusExamFilter')?.value||'';
-    if($('syllabusExamFilter') && !$('syllabusExamFilter').dataset.ready){
-      $('syllabusExamFilter').innerHTML='<option value="">All exams</option>'+state.exams.map(e=>`<option value="${esc(e.short_name)}">${esc(e.name)}</option>`).join('');
-      $('syllabusExamFilter').dataset.ready='1';
-    }
-    const rows=state.microtopics.filter(m=>!examFilter||examShort(m.exam_id)===examFilter).filter(m=>{
-      if(!search)return true;
-      return `${examShort(m.exam_id)} ${m.subject||''} ${m.topic||''} ${m.microtopic||''}`.toLowerCase().includes(search);
-    });
-    const exams={};
-    rows.forEach(m=>{
-      const ex=examShort(m.exam_id)||'Other';
-      exams[ex]??={items:[],subjects:{}}; exams[ex].items.push(m);
-      const sub=m.subject||'Uncategorised'; exams[ex].subjects[sub]??={items:[],topics:{}}; exams[ex].subjects[sub].items.push(m);
-      const topic=m.topic||'General'; exams[ex].subjects[sub].topics[topic]??=[]; exams[ex].subjects[sub].topics[topic].push(m);
-    });
-    const counting=rows.filter(m=>m.counts_toward_completion!==false), studied=counting.filter(m=>['studied','mastered'].includes(m.status)).length;
-    if($('syllabusSummary')) $('syllabusSummary').innerHTML=`<strong>${rows.length.toLocaleString()}</strong> source entries · <strong>${counting.length.toLocaleString()}</strong> completion topics · <strong>${studied.toLocaleString()}</strong> studied`;
-    const statusMark=m=>m.status==='mastered'?'✓✓':m.status==='studied'?'✓':'○';
-    const statusClass=m=>m.status==='mastered'?'mastered':m.status==='studied'?'studied':'';
-    root.innerHTML=Object.entries(exams).map(([ex,ed])=>{
-      const ec=ed.items.filter(m=>m.counts_toward_completion!==false).length, es=ed.items.filter(m=>m.counts_toward_completion!==false&&['studied','mastered'].includes(m.status)).length;
-      return `<details class="tree-exam" ${search?'open':''}><summary><span>${esc(ex)}</span><small>${es}/${ec} studied · ${ed.items.length} source entries</small></summary><div class="tree-children">${Object.entries(ed.subjects).map(([sub,sd])=>{
-        const sc=sd.items.filter(m=>m.counts_toward_completion!==false).length, ss=sd.items.filter(m=>m.counts_toward_completion!==false&&['studied','mastered'].includes(m.status)).length;
-        return `<details class="tree-subject" ${search?'open':''}><summary><span>${esc(sub)}</span><small>${ss}/${sc}</small></summary><div class="tree-children">${Object.entries(sd.topics).map(([topic,ms])=>`<details class="tree-topic" ${search?'open':''}><summary><span>${esc(topic)}</span><small>${ms.filter(m=>m.counts_toward_completion!==false).length} topics</small></summary><div class="microtopic-list">${ms.map(m=>`<div class="microtopic-row ${statusClass(m)}"><span class="topic-status">${statusMark(m)}</span><span>${esc(m.microtopic)}</span>${m.recurring?'<em>recurring</em>':m.counts_toward_completion===false?'<em>structural</em>':''}</div>`).join('')}</div></details>`).join('')}</div></details>`;
-      }).join('')}</div></details>`;
-    }).join('')||'<div class="empty-state">No syllabus entries match this search.</div>';
+    if($('syllabusExamFilter') && !$('syllabusExamFilter').dataset.ready){$('syllabusExamFilter').innerHTML='<option value="">All exams</option>'+state.exams.map(e=>`<option value="${esc(e.short_name)}">${esc(e.name)}</option>`).join('');$('syllabusExamFilter').dataset.ready='1';}
+    const sourceRows=state.microtopics.filter(m=>!examFilter||examShort(m.exam_id)===examFilter);
+    const rows=sourceRows.map(m=>({...m,_path:officialPath(m)})).filter(m=>{if(!search)return true;return `${examShort(m.exam_id)} ${m._path.level1} ${m._path.level2} ${m._path.mid} ${m.microtopic}`.toLowerCase().includes(search);});
+    const tree={}; rows.forEach(m=>{const ex=examShort(m.exam_id)||'Other',a=m._path.level1||'Official syllabus',b=m._path.level2||'General';tree[ex]??={};tree[ex][a]??={};tree[ex][a][b]??=[];tree[ex][a][b].push(m);});
+    const counting=rows.filter(m=>m.counts_toward_completion!==false),studied=counting.filter(m=>['studied','mastered'].includes(m.status)).length;
+    $('syllabusSummary').innerHTML=`<strong>${rows.length.toLocaleString()}</strong> mapped entries · <strong>${counting.length.toLocaleString()}</strong> completion topics · <strong>${studied.toLocaleString()}</strong> studied<div class="mapping-note">Mapping rule: every row is displayed under an official syllabus heading. Source-tree spillovers are corrected by content, so security material is mapped to GS III Internal Security rather than Environment.</div>`;
+    const mark=m=>m.status==='mastered'?'✓✓':m.status==='studied'?'✓':'○', cls=m=>m.status==='mastered'?'mastered':m.status==='studied'?'studied':'';
+    root.innerHTML=Object.entries(tree).map(([ex,levels])=>`<details class="tree-exam" ${search?'open':''}><summary><span>${esc(ex)}</span><small>${rows.filter(m=>examShort(m.exam_id)===ex).length} mapped micro-topics</small></summary><div class="tree-children">${Object.entries(levels).map(([l1,groups])=>`<details class="tree-subject" ${search?'open':''}><summary><span>${esc(l1)}</span><small>${Object.values(groups).flat().length}</small></summary><div class="tree-children">${Object.entries(groups).map(([official,ms])=>`<details class="tree-topic" ${search?'open':''}><summary><span>${esc(official)}</span><small>${ms.length}</small></summary><div class="microtopic-list">${ms.map(m=>`<div class="microtopic-row ${cls(m)}"><span class="topic-status">${mark(m)}</span><span class="path-label"><b>${esc(m.microtopic)}</b>${m._path.mid&&m._path.mid!==official?`<small>${esc(m._path.level2)} › ${esc(m._path.mid)} › micro-topic</small>`:`<small>${esc(m._path.level2)} › micro-topic</small>`}</span>${m.recurring?'<em>recurring</em>':m.counts_toward_completion===false?'<em>structural</em>':''}</div>`).join('')}</div></details>`).join('')}</div></details>`).join('')}</div></details>`).join('')||'<div class="empty-state">No syllabus entries match this search.</div>';
+  }
+  function fmtMinutes(mins){mins=Math.round(mins||0);const h=Math.floor(mins/60),m=mins%60;return h?`${h}h ${m}m`:`${m}m`;}
+  function sessionExam(s){const t=state.tasks.find(x=>x.id===s.task_id);return t?examShort(t.exam_id):'';}
+  function renderStudyCalendar(){
+    const root=$('studyCalendar');if(!root)return;const now=new Date(),y=now.getFullYear(),mo=now.getMonth(),first=new Date(y,mo,1),days=new Date(y,mo+1,0).getDate();
+    const byDay={};state.sessions.forEach(s=>{const d=localDateOf(s.ended_at);byDay[d]=(byDay[d]||0)+(Number(s.minutes)||0);});
+    const blanks=Array(first.getDay()).fill('<div class="calendar-day empty"></div>').join('');
+    const cells=Array.from({length:days},(_,i)=>{const n=i+1,key=`${y}-${String(mo+1).padStart(2,'0')}-${String(n).padStart(2,'0')}`,mins=byDay[key]||0;return `<div class="calendar-day ${key===todayISO()?'today':''}"><span class="day-num">${n}</span>${mins?`<span class="day-min">${fmtMinutes(mins)}</span>`:''}</div>`}).join('');
+    root.innerHTML=`<div class="calendar-head"><strong>${new Intl.DateTimeFormat('en-IN',{month:'long',year:'numeric'}).format(now)}</strong><small class="muted">Timer-recorded study time</small></div><div class="calendar-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="calendar-dow">${d}</div>`).join('')}${blanks}${cells}</div>`;
   }
   function renderProgress(){
-    $('examProgressCards').innerHTML=state.exams.map(ex=>{const ms=state.microtopics.filter(m=>m.exam_id===ex.id&&m.counts_toward_completion!==false), studied=ms.filter(m=>['studied','mastered'].includes(m.status)).length, mastered=ms.filter(m=>m.status==='mastered').length, never=ms.length-studied, due=state.reviews.filter(r=>!r.completed&&r.due_date<=todayISO()&&r.exam===ex.short_name).length, pct=ms.length?Math.round(studied/ms.length*100):0;return `<div class="progress-card"><div class="progress-line"><h3>${esc(ex.name)}</h3><strong>${pct}% studied</strong></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${esc(ex.color||'#7857ff')}"></div></div><p><strong>${studied}/${ms.length}</strong> studied · <strong>${never}</strong> never studied · <strong>${mastered}</strong> mastered · <strong>${due}</strong> reviews due</p>${ex.deadline?`<small class="muted">Planning deadline: ${esc(ex.deadline)}</small>`:''}</div>`}).join('');
+    const today=todayISO(),now=new Date(),weekAgo=new Date(now);weekAgo.setDate(now.getDate()-6);const monthKey=today.slice(0,7);
+    const total=state.sessions.reduce((n,s)=>n+(Number(s.minutes)||0),0),todayMin=focusedMinutesToday(),weekMin=state.sessions.filter(s=>new Date(s.ended_at)>=new Date(weekAgo.getFullYear(),weekAgo.getMonth(),weekAgo.getDate())).reduce((n,s)=>n+(Number(s.minutes)||0),0),monthMin=state.sessions.filter(s=>localDateOf(s.ended_at).startsWith(monthKey)).reduce((n,s)=>n+(Number(s.minutes)||0),0);
+    const byExam={PSC:0,'PUB AD':0,'UPSC GS':0};state.sessions.forEach(s=>{const ex=sessionExam(s);if(ex in byExam)byExam[ex]+=Number(s.minutes)||0;});
+    if($('studyTimeCards'))$('studyTimeCards').innerHTML=`<div class="time-card"><span>Today</span><b>${fmtMinutes(todayMin)}</b><small>resets daily</small></div><div class="time-card"><span>Last 7 days</span><b>${fmtMinutes(weekMin)}</b><small>rolling week</small></div><div class="time-card"><span>This month</span><b>${fmtMinutes(monthMin)}</b><small>${today.slice(0,7)}</small></div><div class="time-card"><span>All time</span><b>${fmtMinutes(total)}</b><small>permanent timer history</small></div><div class="time-card"><span>Kerala PSC</span><b>${fmtMinutes(byExam.PSC)}</b><small>all recorded sessions</small></div><div class="time-card"><span>Public Administration</span><b>${fmtMinutes(byExam['PUB AD'])}</b><small>all recorded sessions</small></div><div class="time-card"><span>UPSC GS / Ethics</span><b>${fmtMinutes(byExam['UPSC GS'])}</b><small>all recorded sessions</small></div>`;
+    renderStudyCalendar();
+    $('examProgressCards').innerHTML=state.exams.map(ex=>{const ms=state.microtopics.filter(m=>m.exam_id===ex.id&&m.counts_toward_completion!==false),studied=ms.filter(m=>['studied','mastered'].includes(m.status)).length,mastered=ms.filter(m=>m.status==='mastered').length,never=ms.length-studied,due=state.reviews.filter(r=>!r.completed&&r.due_date<=todayISO()&&r.exam===ex.short_name).length,pct=ms.length?Math.round(studied/ms.length*100):0,deadline=deadlineFor(ex.short_name);return `<div class="progress-card"><div class="progress-line"><h3>${esc(ex.name)}</h3><strong>${pct}% studied</strong></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${esc(ex.color||'#7857ff')}"></div></div><p><strong>${studied}/${ms.length}</strong> studied · <strong>${never}</strong> never studied · <strong>${mastered}</strong> mastered · <strong>${due}</strong> reviews due</p>${deadline?`<small class="muted">Timeline: ${esc(deadline)} · ${daysUntil(deadline)} days left</small>`:''}</div>`}).join('');
     const completed=state.microtopics.filter(m=>['studied','mastered'].includes(m.status)).sort((a,b)=>(b.last_studied_at||'').localeCompare(a.last_studied_at||''));
     $('completedTopicsList').innerHTML=completed.length?completed.slice(0,300).map(m=>`<div class="stack-item"><div><strong>${esc(m.microtopic)}</strong><small>${esc(m.subject)} · ${esc(examShort(m.exam_id))}</small></div><div>${m.status==='mastered'?'Mastered':'Studied'}</div></div>`).join(''):'<div class="empty-state">No syllabus topics completed yet.</div>';
   }
@@ -555,3 +657,4 @@
 
   init();
 })();
+
