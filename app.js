@@ -14,17 +14,17 @@
 
   const state = {
     user: null, offline: false, settings: {daily_minutes:240, minimum_goal:3, pomodoro_focus:25, pomodoro_break:5},
-    exams: [], microtopics: [], tasks: [], reviews: [], errors: [], stats: {xp:0, streak:0, longest_streak:0, last_goal_date:null},
-    timer: {taskId:null, mode:'countdown', total:1500, left:1500, running:false, interval:null, startedAt:null, accumulated:0},
+    exams: [], microtopics: [], tasks: [], reviews: [], errors: [], sessions: [], stats: {xp:0, streak:0, longest_streak:0, last_goal_date:null},
+    timer: {taskId:null, mode:'countdown', total:1500, left:1500, running:false, interval:null, startedAt:null, startLeft:1500, accumulated:0},
     currentReview: null
   };
 
   function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2200); }
   function lsKey(name){ return `scc_${name}`; }
   function loadLocal(){
-    ['settings','exams','microtopics','tasks','reviews','errors','stats'].forEach(k=>{ const v=localStorage.getItem(lsKey(k)); if(v) try{state[k]=JSON.parse(v)}catch{} });
+    ['settings','exams','microtopics','tasks','reviews','errors','sessions','stats'].forEach(k=>{ const v=localStorage.getItem(lsKey(k)); if(v) try{state[k]=JSON.parse(v)}catch{} });
   }
-  function saveLocal(){ ['settings','exams','microtopics','tasks','reviews','errors','stats'].forEach(k=>localStorage.setItem(lsKey(k),JSON.stringify(state[k]))); }
+  function saveLocal(){ ['settings','exams','microtopics','tasks','reviews','errors','sessions','stats'].forEach(k=>localStorage.setItem(lsKey(k),JSON.stringify(state[k]))); }
 
   async function init(){
     $('dateLabel').textContent = new Intl.DateTimeFormat('en-IN',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
@@ -44,9 +44,9 @@
     $('replanBtn').onclick=replan;
     $('mainNav').addEventListener('click',e=>{const b=e.target.closest('.nav-item');if(b) switchView(b.dataset.view)});
     $('energyMode').onchange=e=>{$('dailyMinutesSetting').value=e.target.value;};
-    $('timerStartBtn').onclick=startTimer; $('timerPauseBtn').onclick=pauseTimer; $('timerResetBtn').onclick=resetTimer;
-    $('timerMode').onchange=e=>{state.timer.mode=e.target.value; if(e.target.value==='pomodoro') setTimerMinutes(state.settings.pomodoro_focus); else if(e.target.value==='recall') setTimerMinutes(10);};
-    document.querySelectorAll('.timer-presets button').forEach(b=>b.onclick=()=>setTimerMinutes(+b.dataset.min));
+    $('timerStartBtn').onclick=startTimer; $('timerPauseBtn').onclick=()=>pauseTimer(true); $('timerResetBtn').onclick=resetTimer;
+    $('timerMode').onchange=async e=>{state.timer.mode=e.target.value; if(e.target.value==='pomodoro') await setTimerMinutes(state.settings.pomodoro_focus); else if(e.target.value==='recall') await setTimerMinutes(10);};
+    document.querySelectorAll('.timer-presets button').forEach(b=>b.onclick=async()=>await setTimerMinutes(+b.dataset.min));
     $('saveSettingsBtn').onclick=saveSettings;
     $('errorSearch').oninput=renderErrors; $('syllabusSearch').oninput=renderSubjects; $('syllabusExamFilter').onchange=renderSubjects; $('errorExamFilter').onchange=renderErrors;
     document.querySelectorAll('.rating').forEach(b=>b.onclick=()=>rateReview(b.dataset.rating));
@@ -94,17 +94,18 @@
 
   async function loadRemote(){
     const uid=state.user.id;
-    const [settings,exams,microtopics,tasks,reviews,errors,stats]=await Promise.all([
+    const [settings,exams,microtopics,tasks,reviews,errors,sessions,stats]=await Promise.all([
       sb.from('scc_settings').select('*').eq('user_id',uid).maybeSingle(),
       fetchAll('scc_exams',q=>q.eq('user_id',uid).order('sort_order')),
       fetchAll('scc_microtopics',q=>q.eq('user_id',uid).order('source_order')),
       fetchAll('scc_tasks',q=>q.eq('user_id',uid).order('scheduled_date').order('sort_order')),
       fetchAll('scc_reviews',q=>q.eq('user_id',uid).order('due_date')),
       fetchAll('scc_errors',q=>q.eq('user_id',uid).order('created_at',{ascending:false})),
+      fetchAll('scc_sessions',q=>q.eq('user_id',uid).order('ended_at',{ascending:false})),
       sb.from('scc_stats').select('*').eq('user_id',uid).maybeSingle()
     ]);
     const err=[settings,stats].find(x=>x.error)?.error; if(err) throw err;
-    state.settings=settings.data||state.settings; state.exams=exams||[]; state.microtopics=microtopics||[]; state.tasks=tasks||[]; state.reviews=reviews||[]; state.errors=errors||[]; state.stats=stats.data||state.stats;
+    state.settings=settings.data||state.settings; state.exams=exams||[]; state.microtopics=microtopics||[]; state.tasks=tasks||[]; state.reviews=reviews||[]; state.errors=errors||[]; state.sessions=sessions||[]; state.stats=stats.data||state.stats;
   }
 
   async function ensureSyllabusImported(){
@@ -182,7 +183,7 @@
     const map=[180,240,360]; $('energyMode').value=map.includes(+state.settings.daily_minutes)?String(state.settings.daily_minutes):'240';
   }
 
-  function renderAll(){ fillExamSelects(); updatePaceBanner(); renderToday(); renderRecall(); renderCarry(); renderPlan(); renderSubjects(); renderRevision(); renderErrors(); renderProgress(); renderRewards(); updateStatsUI(); }
+  function renderAll(){ fillExamSelects(); updateStudyTimeUI(); updatePaceBanner(); renderToday(); renderRecall(); renderCarry(); renderPlan(); renderSubjects(); renderRevision(); renderErrors(); renderProgress(); renderRewards(); updateStatsUI(); }
   function fillExamSelects(){
     const opts='<option value="">No exam</option>'+state.exams.map(e=>`<option value="${e.id}">${esc(e.short_name)} · ${esc(e.name)}</option>`).join(''); $('taskExam').innerHTML=opts;
     const nameOpts=state.exams.map(e=>`<option value="${esc(e.short_name)}">${esc(e.short_name)} · ${esc(e.name)}</option>`).join(''); $('errorExam').innerHTML=nameOpts; $('errorExamFilter').innerHTML='<option value="">All exams</option>'+nameOpts;
@@ -200,7 +201,7 @@
     const offset=dueReviews.length;
     const nextTask=dueReviews.length?null:tasks.find(t=>!t.completed)?.id;
     const taskHtml=tasks.map((t,i)=>`<article class="task-card ${t.completed?'completed':''} ${t.id===nextTask?'next-task':''}" data-task-id="${t.id}">
-      <div class="task-number">${t.completed?'✓':i+1+offset}</div><div><div class="task-title">${esc(t.title)}</div><div class="task-sub">${esc(t.subject||'')} ${t.topic?'› '+esc(t.topic):''}</div><div class="task-meta"><span class="tag">${esc(examShort(t.exam_id)||'MANUAL')}</span><span class="tag">${esc(t.task_type)}</span> ⏱ ${t.estimated_minutes} min</div></div>
+      <div class="task-number">${t.completed?'✓':i+1+offset}</div><div><div class="task-title">${esc(t.title)}</div><div class="task-sub">${esc(t.subject||'')} ${t.topic?'› '+esc(t.topic):''}</div><div class="task-meta"><span class="tag">${esc(examShort(t.exam_id)||'MANUAL')}</span><span class="tag">${esc(t.task_type)}</span> ⏱ Plan ${t.estimated_minutes} min${(t.actual_minutes||0)>0?` · <b class="actual-time">Studied ${t.actual_minutes} min</b>`:''}</div></div>
       <div class="task-actions"><button class="btn ghost task-start" data-action="start">▶ Timer</button><input aria-label="Complete task" type="checkbox" data-action="complete" ${t.completed?'checked':''}></div></article>`).join('');
     $('taskList').innerHTML=reviewHtml+taskHtml;
     $('taskList').querySelectorAll('[data-action="review"]').forEach(b=>b.onclick=()=>startReview(b.closest('[data-review-id]').dataset.reviewId));
@@ -454,13 +455,93 @@
   function renderRewards(){ $('rewardXP').textContent=state.stats.xp||0;$('rewardLevel').textContent=Math.floor((state.stats.xp||0)/500)+1;$('rewardStreak').textContent=state.stats.streak||0;$('xpRules').innerHTML='Task completion: <b>+20 XP</b><br>Focus time: <b>+1 XP per 5 minutes</b><br>Active recall/review: <b>+10 to +18 XP</b><br>Minimum-goal streak bonus: <b>+20 XP</b>'; }
   function updateStatsUI(){ $('streakValue').textContent=state.stats.streak||0;$('xpValue').textContent=state.stats.xp||0;renderRewards(); }
 
-  function selectTaskTimer(id){ const t=state.tasks.find(x=>x.id===id); if(!t)return; state.timer.taskId=id; state.timer.mode='countdown'; $('timerMode').value='countdown'; $('timerTaskName').textContent=t.title; setTimerMinutes(t.estimated_minutes); window.scrollTo({top:0,behavior:'smooth'}); }
-  function setTimerMinutes(min){ pauseTimer(); state.timer.total=min*60;state.timer.left=state.timer.total;state.timer.accumulated=0;updateTimerDisplay(); }
-  function updateTimerDisplay(){ const m=Math.floor(state.timer.left/60),s=state.timer.left%60;$('timerDisplay').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
-  function startTimer(){ if(state.timer.running)return; state.timer.running=true;state.timer.startedAt=Date.now(); state.timer.interval=setInterval(async()=>{state.timer.left--;state.timer.accumulated++;updateTimerDisplay();if(state.timer.left<=0){pauseTimer();await recordTimerSession();toast('Timer complete.');if(state.timer.mode==='recall')finishRecallPrompt();}},1000); }
-  function pauseTimer(){ if(state.timer.interval)clearInterval(state.timer.interval);state.timer.interval=null;state.timer.running=false; }
-  function resetTimer(){ pauseTimer();state.timer.left=state.timer.total;state.timer.accumulated=0;updateTimerDisplay(); }
-  async function recordTimerSession(){ const mins=Math.max(1,Math.round(state.timer.accumulated/60)); if(state.timer.taskId){const t=state.tasks.find(x=>x.id===state.timer.taskId);if(t){t.actual_minutes=(t.actual_minutes||0)+mins;await persistTask(t);}} const row={id:uuid(),user_id:state.offline?'offline':state.user.id,task_id:state.timer.taskId,mode:state.timer.mode,minutes:mins,started_at:new Date(Date.now()-state.timer.accumulated*1000).toISOString(),ended_at:new Date().toISOString()};await persistInsert('scc_sessions',row); }
+  async function selectTaskTimer(id){
+    if(state.timer.running || state.timer.accumulated>0) await pauseTimer(true);
+    const t=state.tasks.find(x=>x.id===id); if(!t)return;
+    state.timer.taskId=id; state.timer.mode='countdown'; $('timerMode').value='countdown';
+    $('timerTaskName').textContent=t.title; await setTimerMinutes(t.estimated_minutes,false); window.scrollTo({top:0,behavior:'smooth'});
+    setTimerStatus(`Ready · ${t.actual_minutes||0} min already studied`,'ready');
+  }
+  async function setTimerMinutes(min, saveExisting=true){
+    if(saveExisting && (state.timer.running || state.timer.accumulated>0)) await pauseTimer(true);
+    else stopTimerInterval();
+    state.timer.total=min*60; state.timer.left=state.timer.total; state.timer.startLeft=state.timer.total; state.timer.accumulated=0; updateTimerDisplay();
+    setTimerStatus(`Ready for ${min} minutes`,'ready');
+  }
+  function updateTimerDisplay(){
+    const safe=Math.max(0,Math.round(state.timer.left)); const m=Math.floor(safe/60),s=safe%60;
+    $('timerDisplay').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const pct=state.timer.total?Math.min(100,Math.max(0,(state.timer.total-safe)/state.timer.total*100)):0;
+    if($('timerProgressFill')) $('timerProgressFill').style.width=`${pct}%`;
+  }
+  function setTimerStatus(text,kind='ready'){
+    const el=$('timerStatus'); if(!el)return; el.textContent=text; el.dataset.kind=kind;
+  }
+  function stopTimerInterval(){ if(state.timer.interval)clearInterval(state.timer.interval); state.timer.interval=null; state.timer.running=false; }
+  function timerTick(){
+    if(!state.timer.running)return;
+    const elapsed=Math.floor((Date.now()-state.timer.startedAt)/1000);
+    state.timer.accumulated=elapsed; state.timer.left=Math.max(0,state.timer.startLeft-elapsed); updateTimerDisplay();
+    if(state.timer.left<=0) finishTimer();
+  }
+  function startTimer(){
+    if(state.timer.running)return;
+    state.timer.running=true; state.timer.startedAt=Date.now(); state.timer.startLeft=state.timer.left;
+    setTimerStatus('● Focusing now','running');
+    $('timerStartBtn').textContent='▶ Running';
+    state.timer.interval=setInterval(timerTick,250); timerTick();
+  }
+  async function pauseTimer(save=true){
+    if(state.timer.running) timerTick();
+    stopTimerInterval(); $('timerStartBtn').textContent='▶ Start';
+    let saved=0;
+    if(save && state.timer.accumulated>0) saved=await recordTimerSession(state.timer.accumulated);
+    state.timer.accumulated=0;
+    setTimerStatus(saved?`Paused · ${saved} min saved to your study time`:'Paused','paused');
+    renderAll();
+    return saved;
+  }
+  async function resetTimer(){
+    if(state.timer.running || state.timer.accumulated>0) await pauseTimer(true); else stopTimerInterval();
+    state.timer.left=state.timer.total; state.timer.startLeft=state.timer.total; state.timer.accumulated=0; updateTimerDisplay();
+    setTimerStatus('Reset · saved study time is kept','ready');
+  }
+  async function finishTimer(){
+    if(!state.timer.running)return;
+    timerTickSafeStop();
+    const saved=await recordTimerSession(state.timer.accumulated);
+    state.timer.accumulated=0; state.timer.left=0; updateTimerDisplay(); $('timerStartBtn').textContent='▶ Start';
+    setTimerStatus(`✓ Session complete · ${saved} min saved`,'done');
+    renderAll(); signalTimerComplete(saved);
+    if(state.timer.mode==='recall')finishRecallPrompt();
+  }
+  function timerTickSafeStop(){
+    if(state.timer.running){ const elapsed=Math.floor((Date.now()-state.timer.startedAt)/1000); state.timer.accumulated=elapsed; state.timer.left=Math.max(0,state.timer.startLeft-elapsed); }
+    stopTimerInterval();
+  }
+  function signalTimerComplete(saved){
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext; if(AC){ const ctx=new AC(); [0,.18,.36].forEach((delay,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=[660,880,1040][i];g.gain.setValueAtTime(.12,ctx.currentTime+delay);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+delay+.22);o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+.23);}); }
+    }catch(e){}
+    const oldTitle=document.title; document.title='⏰ TIME UP · Study Command Centre'; setTimeout(()=>document.title=oldTitle,12000);
+    if($('timerDoneText')) $('timerDoneText').textContent=`${saved} minute${saved===1?'':'s'} saved. ${$('timerTaskName').textContent||'Session'} is finished.`;
+    try{ if($('timerDoneDialog') && !$('timerDoneDialog').open) $('timerDoneDialog').showModal(); }catch(e){}
+    toast(`⏰ Time up! ${saved} min saved.`);
+  }
+  function localDateOf(iso){ if(!iso)return''; const d=new Date(iso); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+  function focusedMinutesToday(){ return state.sessions.filter(x=>localDateOf(x.ended_at)===todayISO()).reduce((n,x)=>n+(Number(x.minutes)||0),0); }
+  async function recordTimerSession(seconds=state.timer.accumulated){
+    if(!seconds || seconds<1)return 0;
+    const mins=Math.max(1,Math.round(seconds/60));
+    if(state.timer.taskId){const t=state.tasks.find(x=>x.id===state.timer.taskId);if(t){t.actual_minutes=(t.actual_minutes||0)+mins;await persistTask(t);}}
+    const row={id:uuid(),user_id:state.offline?'offline':state.user.id,task_id:state.timer.taskId,mode:state.timer.mode,minutes:mins,started_at:new Date(Date.now()-seconds*1000).toISOString(),ended_at:new Date().toISOString()};
+    state.sessions.unshift(row); await persistInsert('scc_sessions',row); updateStudyTimeUI(); return mins;
+  }
+  function updateStudyTimeUI(){
+    const mins=focusedMinutesToday();
+    if($('focusMinutesValue')) $('focusMinutesValue').textContent=mins;
+    if($('focusTodayText')) $('focusTodayText').textContent=`${mins} min studied today`;
+  }
 
   async function saveSettings(){ state.settings.daily_minutes=+$('dailyMinutesSetting').value||240;state.settings.minimum_goal=+$('minimumGoalSetting').value||3;state.settings.pomodoro_focus=+$('pomodoroFocusSetting').value||25;state.settings.pomodoro_break=+$('pomodoroBreakSetting').value||5;if(state.offline)saveLocal();else await sb.from('scc_settings').upsert({...state.settings,user_id:state.user.id,updated_at:new Date().toISOString()});hydrateSettings();renderToday();toast('Settings saved.'); }
 

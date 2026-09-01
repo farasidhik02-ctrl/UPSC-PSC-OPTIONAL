@@ -55,3 +55,6 @@ The Progress screen excludes recurring Current Affairs from the finite PSC denom
 
 ## Consolidated PSC Sprint planner
 This build freezes the planner rules through 14 October 2026. Daily capacity is a hard ceiling. Manual work and due recall consume capacity first; PSC scheduled/backlogged coverage, required practice/current affairs, and extra PSC coverage are prioritized before the controlled Public Administration/UPSC remainder. Generated overdue rows are rebuilt rather than duplicated. See `ACCEPTANCE_TESTS.md` for the packaged checks.
+
+### Focus time tracking
+The timer now records real elapsed focus time when you pause or when the countdown finishes. Today's total is shown in the header and inside the Focus Timer. Each task separately shows planned time and actual studied time. Timer completion has an audible cue and a blocking in-app Time's up dialog so a finished session is obvious.

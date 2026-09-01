@@ -55,7 +55,7 @@
         </div>
         <div class="top-stats">
           <div class="stat-chip"><span>🔥</span><div><b id="streakValue">0</b><small>day streak</small></div></div>
-          <div class="stat-chip"><span>💎</span><div><b id="xpValue">0</b><small>XP</small></div></div>
+          <div class="stat-chip"><span>💎</span><div><b id="xpValue">0</b><small>XP</small></div></div><div class="stat-chip"><span>⏱</span><div><b id="focusMinutesValue">0</b><small>min today</small></div></div>
           <button id="quickAddBtn" class="btn primary">+ Add Task</button>
         </div>
       </header>
@@ -90,7 +90,7 @@
           <aside class="right-column">
             <section class="panel focus-panel">
               <div class="panel-head"><div><h3>Focus Timer</h3><p id="timerTaskName" class="muted">Choose a task and start</p></div><select id="timerMode"><option value="countdown">Countdown</option><option value="pomodoro">Pomodoro</option><option value="recall">Recall</option></select></div>
-              <div id="timerDisplay" class="timer-display">25:00</div>
+              <div id="timerDisplay" class="timer-display">25:00</div><div class="timer-progress"><div id="timerProgressFill" class="timer-progress-fill"></div></div><div id="timerStatus" class="timer-status" data-kind="ready">Ready</div><div id="focusTodayText" class="focus-today">0 min studied today</div>
               <div class="timer-actions"><button id="timerStartBtn" class="btn primary">▶ Start</button><button id="timerPauseBtn" class="btn ghost">Pause</button><button id="timerResetBtn" class="btn subtle">Reset</button></div>
               <div class="timer-presets"><button data-min="10">10m</button><button data-min="25">25m</button><button data-min="45">45m</button><button data-min="60">60m</button></div>
             </section>
@@ -176,6 +176,16 @@
       <div class="modal-head"><h2>How did recall feel?</h2><button value="cancel" class="icon-btn">✕</button></div>
       <p id="reviewTopicLabel"></p>
       <div class="rating-buttons"><button type="button" data-rating="weak" class="rating weak">🔴 Weak</button><button type="button" data-rating="shaky" class="rating shaky">🟡 Shaky</button><button type="button" data-rating="strong" class="rating strong">🟢 Strong</button></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="timerDoneDialog" class="modal small-modal timer-done-modal">
+    <form method="dialog">
+      <div class="timer-done-icon">⏰</div>
+      <h2>Time's up</h2>
+      <p id="timerDoneText">Your focus session is complete.</p>
+      <menu><button value="ok" class="btn primary">Got it</button></menu>
     </form>
   </dialog>
 

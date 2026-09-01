@@ -22,3 +22,12 @@ Checked before packaging:
 - MCQ/current-affairs/manual tasks do not create fake topic reviews.
 - Reviews continue through adaptive 1/3/7/14/30-day stages and Strong final review can mark Mastered.
 - 3h / 4h / 6h capacity values remain supported.
+
+## Focus timer persistence (added after real-use test)
+- [x] Timer uses wall-clock elapsed time rather than trusting 1-second interval ticks.
+- [x] Pausing saves elapsed focus time to scc_sessions and task.actual_minutes.
+- [x] Completed timer saves elapsed focus time before signalling completion.
+- [x] Task cards display planned minutes and actual studied minutes separately.
+- [x] Header and Focus Timer show total minutes studied today.
+- [x] Timer completion triggers an in-app Time's up dialog, audible three-tone signal, title alert, and status text.
+- [x] Reset keeps already-saved focus time.
